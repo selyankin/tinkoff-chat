@@ -41,10 +41,10 @@ func Login(c *gin.Context) {
 		respErr(c, err, "no such user")
 		return
 	}
-	var user model.RWUser
+	var user model.User
 	err = resp.Decode(&user)
 
-	if !hheckPasswordHash(reqPayload.Password, user.PHash) {
+	if !checkPasswordHash(reqPayload.Password, user.PHash) {
 		respErr(c, nil, "incorrect password")
 		return
 	}
@@ -65,7 +65,7 @@ func Login(c *gin.Context) {
 			return
 		}
 		if s.ActiveUntil.After(time.Now()) {
-			c.JSON(200, map[string]interface{}{"success": true, "token": s.Token})
+			c.JSON(200, map[string]interface{}{"success": true, "token": s.Token, "login": user.Login, "id": user.Id})
 			return
 		}
 	}
@@ -87,7 +87,7 @@ func Login(c *gin.Context) {
 		respErr(c, err, "")
 	}
 
-	c.JSON(200, map[string]interface{}{"success": true, "token": s.Token})
+	c.JSON(200, map[string]interface{}{"success": true, "token": s.Token, "login": user.Login, "id": user.Id})
 }
 
 func Register(c *gin.Context) {
@@ -130,7 +130,7 @@ func hashPassword(password string) (string, error) {
 	return string(bytes), err
 }
 
-func hheckPasswordHash(password, hash string) bool {
+func checkPasswordHash(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	return err == nil
 }

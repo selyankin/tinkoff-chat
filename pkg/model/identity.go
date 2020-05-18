@@ -16,6 +16,7 @@ type Session struct {
 }
 
 type User struct {
+	Id       string `json:"_id" bson:"_id,omitempty"`
 	Login    string `json:"login" bson:"login"`
 	Password string `json:"password" bson:"-"`
 	PHash    string `json:"p_hash"`
@@ -23,13 +24,9 @@ type User struct {
 	Name     string `json:"name"  bson:"name"`
 }
 
-type RWUser struct {
-	Id       string `json:"_id" bson:"_id"`
-	User
-}
-
-func GetIdentity(c *gin.Context) (*RWUser, error) {
+func GetIdentity(c *gin.Context) (*User, error) {
 	token := c.Request.Header.Get("X-Auth-Token")
+
 	mongoClient := c.Keys["mongo"].(*mongo.Client)
 
 	sessionsCollection := mongoClient.Database("chat").Collection("sessions")
@@ -56,7 +53,7 @@ func GetIdentity(c *gin.Context) (*RWUser, error) {
 		return nil, errors.New("No such user")
 	}
 
-	var u RWUser
+	var u User
 	err = userResp.Decode(&u)
 	if err != nil {
 		return nil, errors.New("Broken user")

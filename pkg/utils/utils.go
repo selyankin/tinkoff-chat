@@ -13,3 +13,12 @@ func Unique(intSlice []string) []string {
 	}
 	return list
 }
+
+func ArrayIn(strSlice []string, element string) bool{
+	for _, e := range strSlice{
+		if e == element{
+			return true
+		}
+	}
+	return false
+}
