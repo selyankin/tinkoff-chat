@@ -51,7 +51,7 @@ func CreateChat(mongoClient *mongo.Client, identity *User, userIds []string, nam
 }
 
 
-func ChatInfo(mongoClient *mongo.Client, chat_id string, identity *User) (*Chat, error) {
+func ChatInfo(mongoClient *mongo.Client, chatID string, identity *User) (*Chat, error) {
 	chatsCollection := mongoClient.Database("chat").Collection("chats")
 	ctx, _ := context.WithTimeout(context.Background(), 15*time.Second)
 
@@ -64,7 +64,7 @@ func ChatInfo(mongoClient *mongo.Client, chat_id string, identity *User) (*Chat,
 	//}
 	//"user_ids": userId
 
-	chatId, err := primitive.ObjectIDFromHex(chat_id)
+	chatId, err := primitive.ObjectIDFromHex(chatID)
 	if err != nil{
 		return nil, err
 	}

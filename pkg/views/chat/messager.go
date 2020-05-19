@@ -3,6 +3,7 @@ package views
 import (
 	"chat/pkg/model"
 	"chat/pkg/utils"
+	"chat/pkg/ws"
 	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
@@ -190,4 +191,20 @@ func MarkAsRead(c *gin.Context){
 	model.MarkAsRead(mongoClient, markAsReadPayload.MessageId, markAsReadPayload.ChatId, identity)
 
 	c.JSON(200, map[string]interface{}{"success": true})
+}
+
+
+
+//WS
+
+func WebSocket(c *gin.Context){
+	wsServer := c.Keys["ws"].(*ws.Server)
+	identity, err := model.GetIdentity(c)
+	if err != nil {
+		c.JSON(400, map[string]interface{}{"success": false, "reason": "unauthorized"})
+		return
+	}
+
+	handler := wsServer.GetHandler(identity)
+	handler.ServeHTTP(c.Writer, c.Request)
 }

@@ -27,6 +27,10 @@ type User struct {
 func GetIdentity(c *gin.Context) (*User, error) {
 	token := c.Request.Header.Get("X-Auth-Token")
 
+	if token == "" {
+		token = c.Request.Header.Get("Sec-WebSocket-Protocol")
+	}
+
 	mongoClient := c.Keys["mongo"].(*mongo.Client)
 
 	sessionsCollection := mongoClient.Database("chat").Collection("sessions")
