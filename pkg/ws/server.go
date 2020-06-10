@@ -75,13 +75,20 @@ func (s *Server) SendMessage(msg *Message) {
 	var destUsers []*Client
 
 	for _, userID := range chat.UserIds{
-		fmt.Println("Sending to ", userID)
-		destUsers = append(destUsers, s.clients[userID])
+		if _, ok := s.clients[userID]; ok {
+			fmt.Println("Sending to ", userID)
+			destUsers = append(destUsers, s.clients[userID])
+		}
 	}
+	sendedMsg := model.SendMessage(s.mongoClient,msg.DestChatID,msg.Text,msg.Identity)
+	model.UpdateChatLastMessage(s.mongoClient,msg.DestChatID, msg.CreatedDate, msg.Text)
 
+	msg.ID = sendedMsg.Id
+	msg.DestChatTitle = chat.Name
 	for _, c := range destUsers {
 		c.Write(msg)
 	}
+
 }
 
 // Listen and serve.

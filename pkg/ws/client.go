@@ -6,12 +6,11 @@ import (
 	"golang.org/x/net/websocket"
 	"io"
 	"log"
+	"time"
 )
 
 
 const channelBufSize = 100
-
-var maxId int = 0
 
 // Chat client.
 type Client struct {
@@ -42,6 +41,7 @@ func (c *Client) Conn() *websocket.Conn {
 }
 
 func (c *Client) Write(msg *Message) {
+	fmt.Println(msg)
 	select {
 	case c.ch <- msg:
 	default:
@@ -104,6 +104,7 @@ func (c *Client) listenRead() {
 			} else {
 				msg.Identity = c.identity
 				msg.FromId = c.identity.Id
+				msg.CreatedDate = time.Now()
 				c.server.SendAll(&msg)
 			}
 		}
