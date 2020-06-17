@@ -136,7 +136,40 @@ func checkPasswordHash(password, hash string) bool {
 }
 
 func randToken() string {
-	b := make([]byte, 8)
+	b := make([]byte, 32)
 	rand.Read(b)
 	return fmt.Sprintf("%x", b)
+}
+
+func IsValidToken(c *gin.Context){
+
+	var validTokenPayload struct{
+		Token string `json:"token"`
+	}
+	err := json.NewDecoder(c.Request.Body).Decode(&validTokenPayload)
+	if err != nil{
+		respErr(c, err, "failed to read body")
+		return
+	}
+
+	ctx, _ := context.WithTimeout(context.Background(), 15*time.Second)
+	mongoClient := c.Keys["mongo"].(*mongo.Client)
+
+	sessionCollection := mongoClient.Database("chat").Collection("sessions")
+	sessionResp := sessionCollection.FindOne(ctx, bson.M{"token": validTokenPayload.Token})
+
+	if sessionResp.Err() == nil {
+		var s model.Session
+		err := sessionResp.Decode(&s)
+		if err != nil {
+			respErr(c, err, "")
+			return
+		}
+		if s.ActiveUntil.After(time.Now()) {
+			c.JSON(200, map[string]interface{}{"success": true})
+			return
+		}
+	}
+
+	respErr(c, nil, "")
 }

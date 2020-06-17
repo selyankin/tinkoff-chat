@@ -91,7 +91,6 @@ func ChatsList(c *gin.Context){
 	}
 
 	mongoClient := c.Keys["mongo"].(*mongo.Client)
-
 	chats := model.GetChats(mongoClient, identity, searchRequestPayload.Query)
 
 	c.JSON(200, chats)
@@ -116,13 +115,41 @@ func ChatInfo(c *gin.Context){
 
 	mongoClient := c.Keys["mongo"].(*mongo.Client)
 
-	chat, err := model.ChatInfo(mongoClient, searchRequestPayload.ChatId, identity)
+	nameList ,err := model.ChatInfo(mongoClient, searchRequestPayload.ChatId, identity)
 	if err != nil{
 		respErr(c, err, "failed to fetch chat")
 		return
 	}
 
-	c.JSON(200, chat)
+	c.JSON(200, nameList)
+}
+
+func ChatInfos(c *gin.Context){
+	identity, err := model.GetIdentity(c)
+	if err != nil {
+		c.JSON(400, map[string]interface{}{"success": false, "reason": "unauthorized"})
+		return
+	}
+
+	var searchRequestPayload struct{
+		ChatId string `json:"chat_id"`
+	}
+
+	err = json.NewDecoder(c.Request.Body).Decode(&searchRequestPayload)
+	if err != nil{
+		respErr(c, err, "failed to read body")
+		return
+	}
+
+	mongoClient := c.Keys["mongo"].(*mongo.Client)
+
+	nameList ,err := model.ChatInfos(mongoClient, searchRequestPayload.ChatId, identity)
+	if err != nil{
+		respErr(c, err, "failed to fetch chat")
+		return
+	}
+
+	c.JSON(200, nameList)
 }
 
 func SendMessage(c *gin.Context){

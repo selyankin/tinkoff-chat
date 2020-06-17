@@ -23,6 +23,12 @@ type Chat struct {
 	LastMessageText string    `json:"last_message_text" bson:"last_message_text"`
 }
 
+type InfoChat struct {
+	Name            string    `json:"name" bson:"name"`
+	NameList        []string  `json:"name_list" bson:"name_list"`
+	LoginList        []string  `json:"login_list" bson:"login_list"`
+}
+
 func CreateChat(mongoClient *mongo.Client, identity *User, userIds []string, name string) (*Chat, error) {
 	chatsCollection := mongoClient.Database("chat").Collection("chats")
 	userIds = append(userIds, identity.Id)
@@ -71,19 +77,71 @@ func ChatInfo(mongoClient *mongo.Client, chatID string, identity *User) (*Chat, 
 	}
 
 	searchResult := chatsCollection.FindOne(ctx, bson.M{"_id": chatId})
-
 	err = searchResult.Decode(&chat)
-	fmt.Println(chat)
 	if err != nil {
 		return nil, errors.New("failed to get response from db")
 	}
 	return &chat, nil
 }
 
+func ChatInfos(mongoClient *mongo.Client, chatID string, identity *User) (InfoChat, error) {
+	chatsCollection := mongoClient.Database("chat").Collection("chats")
+	ctx, _ := context.WithTimeout(context.Background(), 15*time.Second)
+
+	var chat Chat
+
+	//TODO: Ограничить вывод чатов по доступу
+	//userId, err := primitive.ObjectIDFromHex(identity.Id)
+	//if err != nil{
+	//	return nil, err
+	//}
+	//"user_ids": userId
+
+	chatId, err := primitive.ObjectIDFromHex(chatID)
+	if err != nil {
+		return InfoChat{}, err
+	}
+
+	searchResult := chatsCollection.FindOne(ctx, bson.M{"_id": chatId})
+	err = searchResult.Decode(&chat)
+	result := GetUsersForChatInfo(mongoClient,chat.UserIds,chat.UserIds,identity)
+	result = InfoChat{
+		Name: chat.Name,
+		NameList: result.NameList,
+		LoginList: result.LoginList,
+	}
+	if err != nil {
+		return InfoChat{}, errors.New("failed to get response from db")
+	}
+	return result, nil
+}
+
 type userSearchResult struct {
 	Id    string `json:"id" bson:"_id"`
 	Login string `json:"login" bson:"login"`
 	Name  string `json:"name" bson:"name"`
+}
+
+func GetUsersForChatInfo(mongoClient *mongo.Client, id []string, logins []string,identity *User) InfoChat {
+	usersCollection := mongoClient.Database("chat").Collection("users")
+	ctx, _ := context.WithTimeout(context.Background(), 15*time.Second)
+
+	idLength := len(id)
+	var result InfoChat
+
+	for i := 0; i < idLength; i++ {
+		objID, _ := primitive.ObjectIDFromHex(id[i])
+		searchResult := usersCollection.FindOne(ctx, bson.M{"_id": objID})
+		var user User
+		var userName *User
+		_ = searchResult.Decode(&user)
+		userName = &user
+		result = InfoChat{
+			LoginList: append(result.LoginList,userName.Login ),
+			NameList: append(result.NameList,userName.Name),
+		}
+	}
+	return result
 }
 
 func GetUsers(mongoClient *mongo.Client, searchString string, identity *User) []userSearchResult {
@@ -94,6 +152,7 @@ func GetUsers(mongoClient *mongo.Client, searchString string, identity *User) []
 	options.SetLimit(5)
 
 	searchResult, err := usersCollection.Find(ctx, bson.M{"login": bson.M{"$regex": fmt.Sprintf("^%s", searchString), "$options": "i"}}, options)
+	fmt.Println(searchResult)
 	if err != nil {
 		log.Error(err)
 		return []userSearchResult{}

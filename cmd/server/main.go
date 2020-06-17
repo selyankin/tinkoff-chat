@@ -38,8 +38,10 @@ func main() {
 	r.POST("/send_message", views.SendMessage)
 	r.POST("/chat_list", views.ChatsList)
 	r.POST("/chat_info", views.ChatInfo)
+	r.POST("/chat_infos", views.ChatInfos)
 	r.POST("/get_messages", views.GetMessages)
 	r.POST("/view_message", views.MarkAsRead)
+	r.POST("/is_valid_token", views.IsValidToken)
 
 	//WS
 
